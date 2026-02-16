@@ -17,10 +17,18 @@ def load_categories_from_csv(csv_file):
     df = pd.read_csv(csv_file)
     categories = defaultdict(list)
     
-    for _, row in df.iterrows():
-        category = row[df.columns[0]].strip()  # First column: Category name
-        pattern = row[df.columns[1]].strip()   # Second column: Pattern
-        categories[category].append(pattern)
+    # Check if CSV has 2 columns (Category, Pattern)
+    if len(df.columns) >= 2:
+        # Format: Category, Pattern
+        for _, row in df.iterrows():
+            category = row[df.columns[0]].strip()
+            pattern = row[df.columns[1]].strip()
+            categories[category].append(pattern)
+    else:
+        # Format: Only Category names (no patterns yet - will be added via input fields)
+        for _, row in df.iterrows():
+            category = row[df.columns[0]].strip()
+            categories[category] = []  # Empty patterns for now
     
     return dict(categories)
 
@@ -130,6 +138,12 @@ if keywords_file and categories_file:
         # Run clustering
         st.info(f"📊 Processing {len(keywords)} keywords with {len(categories)} categories...")
         clusters = cluster_keywords(keywords, categories)
+        
+        # Check if any categories have empty patterns
+        empty_categories = [cat for cat, patterns in categories.items() if not patterns]
+        if empty_categories:
+            st.warning(f"⚠️ Categories with no patterns: {', '.join(empty_categories)}")
+            st.info("💡 Use the input fields below to add patterns for these categories, or upload a CSV with Category,Pattern columns")
         
         # Display results in tabs
         tab1, tab2, tab3 = st.tabs(["📊 Baskets Overview", "📝 Detailed View", "⬇️ Download Results"])
