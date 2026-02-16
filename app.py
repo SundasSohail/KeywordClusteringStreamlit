@@ -135,15 +135,52 @@ if keywords_file and categories_file:
             
             return clusters
         
-        # Run clustering
-        st.info(f"📊 Processing {len(keywords)} keywords with {len(categories)} categories...")
-        clusters = cluster_keywords(keywords, categories)
-        
         # Check if any categories have empty patterns
         empty_categories = [cat for cat, patterns in categories.items() if not patterns]
+        
         if empty_categories:
             st.warning(f"⚠️ Categories with no patterns: {', '.join(empty_categories)}")
-            st.info("💡 Use the input fields below to add patterns for these categories, or upload a CSV with Category,Pattern columns")
+            
+            with st.expander("➕ Add Patterns to Categories", expanded=True):
+                st.info("💡 Add regex patterns to help categorize your keywords")
+                
+                # Create input fields for each empty category
+                for category in empty_categories:
+                    st.subheader(f"📂 {category}")
+                    
+                    # Number of patterns input
+                    num_patterns = st.number_input(
+                        f"How many patterns for '{category}'?",
+                        min_value=1,
+                        max_value=10,
+                        value=1,
+                        key=f"num_{category}"
+                    )
+                    
+                    # Input fields for patterns
+                    patterns_list = []
+                    for i in range(num_patterns):
+                        pattern = st.text_input(
+                            f"Pattern {i+1}",
+                            placeholder="e.g., lederhosen.*men or dirndl",
+                            key=f"pattern_{category}_{i}"
+                        )
+                        if pattern:
+                            patterns_list.append(pattern)
+                    
+                    if patterns_list:
+                        categories[category] = patterns_list
+                    
+                    st.markdown("---")
+                
+                if st.button("✅ Update Categories and Cluster"):
+                    st.rerun()
+            
+            st.stop()  # Don't run clustering until patterns are added
+        
+        # Run clustering only if all categories have patterns
+        st.info(f"📊 Processing {len(keywords)} keywords with {len(categories)} categories...")
+        clusters = cluster_keywords(keywords, categories)
         
         # Display results in tabs
         tab1, tab2, tab3 = st.tabs(["📊 Baskets Overview", "📝 Detailed View", "⬇️ Download Results"])
