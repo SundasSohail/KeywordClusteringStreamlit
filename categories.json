@@ -1,0 +1,70 @@
+{
+  "Men Lederhosen & Outfits": [
+    "lederhosen.*men(?!.*shirt|.*shoe|.*sock)",
+    "mens.*lederhosen(?!.*shirt|.*shoe|.*sock)",
+    "male.*lederhosen(?!.*shirt|.*shoe|.*sock)",
+    "lederhosen.*male(?!.*shirt|.*shoe|.*sock)",
+    "traditional.*lederhosen(?!.*women|.*female|.*shirt|.*shoe)",
+    "german.*lederhosen(?!.*women|.*female|.*shirt|.*shoe)",
+    "german.*lederhosen.*outfit",
+    "german.*lederhosen.*male",
+    "lederhosen.*outfit",
+    "oktoberfest.*herren",
+    "outfit.*herren",
+    "traditional.*german.*lederhosen",
+    "long.*lederhosen.*pants",
+    "plus.*size.*lederhosen"
+  ],
+  "Women Outfits & Clothing": [
+    "women.*outfit",
+    "female.*outfit",
+    "womens.*outfit",
+    "womens.*clothing",
+    "women.*clothing",
+    "traditional.*german.*female",
+    "german.*female.*outfit",
+    "german.*female",
+    "traditional.*german.*outfit(?!.*men|.*male)",
+    "oktoberfest.*women",
+    "oktoberfest.*clothing.*women",
+    "oktoberfest.*dresses"
+  ],
+  "Women Dirndl & Dresses": [
+    "dirndl",
+    "women.*dirndl",
+    "german.*dirndl",
+    "oktoberfest.*dirndl",
+    "dirndl.*size"
+  ],
+  "Men Shirts": [
+    "lederhosen.*shirt",
+    "shirt.*lederhosen",
+    "mens.*shirt",
+    "mens.*oktoberfest.*shirt",
+    "oktoberfest.*shirt",
+    "lederhosen.*shirts",
+    "shirt.*men"
+  ],
+  "Men Shoes & Socks": [
+    "lederhosen.*shoe",
+    "shoes.*lederhosen",
+    "mens.*shoe",
+    "oktoberfest.*shoe",
+    "mens.*oktoberfest.*shoe",
+    "lederhosen.*sock",
+    "socks.*lederhosen",
+    "oktoberfest.*sock",
+    "mens.*oktoberfest.*sock"
+  ],
+  "Accessories": [
+    "suspender",
+    "belt",
+    "bundhosen",
+    "bavarian.*trachten"
+  ],
+  "Oktoberfest General": [
+    "oktoberfest.*costume",
+    "oktoberfest(?!.*dirndl|.*women|.*men|.*shoe|.*shirt|.*sock)",
+    "german.*outfit(?!.*female|.*women)"
+  ]
+}
