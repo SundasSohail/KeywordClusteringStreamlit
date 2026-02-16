@@ -12,23 +12,72 @@ st.set_page_config(page_title="Keyword Clustering Tool", layout="wide", initial_
 st.title("🎯 Keyword Clustering Tool")
 st.markdown("Upload your keywords and categories to automatically organize keywords into relevant baskets.")
 
+def load_categories_from_csv(csv_file):
+    """Convert CSV categories format to dictionary"""
+    df = pd.read_csv(csv_file)
+    categories = defaultdict(list)
+    
+    for _, row in df.iterrows():
+        category = row[df.columns[0]].strip()  # First column: Category name
+        pattern = row[df.columns[1]].strip()   # Second column: Pattern
+        categories[category].append(pattern)
+    
+    return dict(categories)
+
+def load_categories(file):
+    """Load categories from JSON or CSV file"""
+    if file is None:
+        return None
+    
+    file_ext = file.name.split('.')[-1].lower()
+    
+    try:
+        if file_ext == 'json':
+            return json.load(file)
+        elif file_ext == 'csv':
+            return load_categories_from_csv(file)
+        else:
+            st.error(f"❌ Unsupported file format: {file_ext}. Please use JSON or CSV.")
+            return None
+    except Exception as e:
+        st.error(f"❌ Error loading categories file: {str(e)}")
+        return None
+
 # Sidebar for file uploads
 with st.sidebar:
     st.header("📁 Upload Files")
     
     keywords_file = st.file_uploader("Upload Keywords CSV", type=['csv'])
-    categories_file = st.file_uploader("Upload Categories JSON", type=['json'])
+    categories_file = st.file_uploader("Upload Categories (JSON or CSV)", type=['json', 'csv'])
     
     st.markdown("---")
     st.subheader("📋 Sample Format")
-    st.markdown("**Keywords CSV:**")
-    st.code("Keyword\ngerman lederhosen women\ntraditional dirndl\n...")
     
-    st.markdown("**Categories JSON:**")
+    st.markdown("**Keywords CSV Format:**")
+    st.markdown("```")
+    st.markdown("Keyword")
+    st.markdown("german lederhosen women")
+    st.markdown("traditional dirndl")
+    st.markdown("men's shirt")
+    st.markdown("```")
+    
+    st.markdown("**Categories CSV Format:**")
+    st.markdown("```")
+    st.markdown("Category")
+    st.markdown("Men Clothing")
+    st.markdown("Women Clothing")
+    st.markdown("Accessories")
+    st.markdown("```")
+    
+    st.markdown("**Categories JSON Format:**")
     st.code("""{
-  "Category Name": [
-    "pattern1.*keyword",
-    "pattern2"
+  "Men Clothing": [
+    "lederhosen.*men",
+    "mens.*outfit"
+  ],
+  "Women Clothing": [
+    "dirndl",
+    "women.*outfit"
   ]
 }""")
 
@@ -40,8 +89,11 @@ if keywords_file and categories_file:
         keyword_col = df_keywords.columns[0]
         keywords = df_keywords[keyword_col].tolist()
         
-        # Load categories
-        categories = json.load(categories_file)
+        # Load categories (supports both JSON and CSV)
+        categories = load_categories(categories_file)
+        
+        if categories is None:
+            st.stop()
         
         # Clustering function
         def cluster_keywords(keywords, categories):
