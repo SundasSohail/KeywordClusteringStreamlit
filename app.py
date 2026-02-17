@@ -17,7 +17,7 @@ def cluster_keywords_with_gemini(keywords, categories):
     
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    for keyword in keywords:
+    for idx, keyword in enumerate(keywords):
         try:
             prompt = f"""You are a keyword categorization expert. Given the following keyword and categories, determine which category this keyword belongs to.
 
@@ -43,10 +43,10 @@ Your response:"""
             clusters[category].append(keyword)
         except Exception as e:
             uncategorized.append(keyword)
-            st.error(f"Error processing '{keyword}': {str(e)}")
+            st.warning(f"Error processing '{keyword}': {str(e)}")
         
-        # Add delay to avoid rate limiting
-        time.sleep(1)
+        # Add longer delay to avoid rate limiting (increased to 2 seconds)
+        time.sleep(2)
     
     return clusters, uncategorized
 
@@ -111,7 +111,7 @@ if keywords_file and categories_file:
         st.info(f"🔄 Processing {len(keywords_list)} keywords using Gemini AI...")
         
         # Cluster keywords using Gemini
-        with st.spinner("Analyzing keywords..."):
+        with st.spinner("Analyzing keywords... (this may take a few minutes due to rate limiting)"):
             clusters, uncategorized = cluster_keywords_with_gemini(keywords_list, categories_list)
         
         # Create tabs
