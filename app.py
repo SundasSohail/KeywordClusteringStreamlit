@@ -1,52 +1,34 @@
 import streamlit as st
 import pandas as pd
 import json
-import os
-import time
 from collections import defaultdict
-import google.generativeai as genai
 
-# Configure Gemini API
-GEMINI_API_KEY = "AIzaSyD08oKX2vXw4YDHFuJ49gahktx4XzTdoYk"
-genai.configure(api_key=GEMINI_API_KEY)
-
-def cluster_keywords_with_gemini(keywords, categories):
-    """Cluster keywords using Gemini API for semantic matching"""
+def cluster_keywords_simple(keywords, categories):
+    """Cluster keywords using simple word matching"""
     clusters = defaultdict(list)
     uncategorized = []
     
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    
-    for idx, keyword in enumerate(keywords):
-        try:
-            prompt = f"""You are a keyword categorization expert. Given the following keyword and categories, determine which category this keyword belongs to.
-
-Keyword: "{keyword}"
-
-Available Categories:
-{chr(10).join([f"- {cat}" for cat in categories])}
-
-Rules:
-1. Choose the SINGLE MOST RELEVANT category
-2. If no category is relevant, respond with "Other"
-3. Respond with ONLY the category name, nothing else
-
-Your response:"""
-            
-            response = model.generate_content(prompt)
-            category = response.text.strip()
-            
-            # Validate the category is one of our options or "Other"
-            if category not in categories and category != "Other":
-                category = "Other"
-            
-            clusters[category].append(keyword)
-        except Exception as e:
-            uncategorized.append(keyword)
-            st.warning(f"Error processing '{keyword}': {str(e)}")
+    for keyword in keywords:
+        keyword_lower = keyword.lower()
+        assigned = False
         
-        # Add longer delay to avoid rate limiting (increased to 2 seconds)
-        time.sleep(2)
+        for category in categories:
+            category_lower = category.lower()
+            # Split category into words
+            category_words = category_lower.split()
+            
+            # Check if any word from category appears in keyword
+            for word in category_words:
+                if word in keyword_lower:
+                    clusters[category].append(keyword)
+                    assigned = True
+                    break
+            
+            if assigned:
+                break
+        
+        if not assigned:
+            uncategorized.append(keyword)
     
     return clusters, uncategorized
 
@@ -55,7 +37,7 @@ st.set_page_config(page_title="Keyword Clustering Tool", layout="wide", initial_
 
 # Title
 st.title("🎯 Keyword Clustering Tool")
-st.markdown("Upload your keywords and categories. Gemini AI will intelligently organize keywords into relevant baskets.")
+st.markdown("Upload your keywords and categories. Keywords will be organized into baskets based on word matching.")
 
 # Sidebar
 with st.sidebar:
@@ -108,11 +90,10 @@ if keywords_file and categories_file:
             st.error("❌ No categories found in file")
             st.stop()
         
-        st.info(f"🔄 Processing {len(keywords_list)} keywords using Gemini AI...")
+        # Cluster keywords
+        clusters, uncategorized = cluster_keywords_simple(keywords_list, categories_list)
         
-        # Cluster keywords using Gemini
-        with st.spinner("Analyzing keywords... (this may take a few minutes due to rate limiting)"):
-            clusters, uncategorized = cluster_keywords_with_gemini(keywords_list, categories_list)
+        st.success(f"✅ Processed {len(keywords_list)} keywords successfully!")
         
         # Create tabs
         tab1, tab2, tab3 = st.tabs(["Basket Summary", "Detailed View", "Download Results"])
@@ -217,9 +198,9 @@ if keywords_file and categories_file:
                 file_name="clustered_keywords.json",
                 mime="application/json"
             )
-    
+
     except Exception as e:
         st.error(f"❌ Error processing files: {str(e)}")
 
 else:
-    st.info("👈 Upload your CSV files in the sidebar to start clustering keywords with Gemini AI")
+    st.info("👈 Upload your CSV files in the sidebar to start clustering keywords")
