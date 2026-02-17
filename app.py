@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import time
 from collections import defaultdict
 import google.generativeai as genai
 
@@ -43,6 +44,9 @@ Your response:"""
         except Exception as e:
             uncategorized.append(keyword)
             st.error(f"Error processing '{keyword}': {str(e)}")
+        
+        # Add delay to avoid rate limiting
+        time.sleep(1)
     
     return clusters, uncategorized
 
