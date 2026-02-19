@@ -44,7 +44,33 @@ with st.sidebar:
     st.header("📁 Upload Files")
     
     keywords_file = st.file_uploader("Upload Keywords CSV", type=['csv'])
-    categories_file = st.file_uploader("Upload Categories CSV", type=['csv'])
+    
+    st.markdown("---")
+    st.subheader("📂 Categories Input")
+    
+    # Toggle between CSV upload and manual input
+    categories_mode = st.radio("Choose category input method:", ["📤 Upload CSV", "✏️ Enter Manually"])
+    
+    if categories_mode == "📤 Upload CSV":
+        categories_file = st.file_uploader("Upload Categories CSV", type=['csv'])
+        categories_list = None
+    else:
+        st.write("**Enter categories (one per line):**")
+        categories_text = st.text_area(
+            "Categories",
+            placeholder="Men Lederhosen & Outfits\nWomen Dirndl & Dresses\nMen Shirts\nAccessories",
+            height=120,
+            label_visibility="collapsed"
+        )
+        categories_file = None
+        # Parse manual input
+        if categories_text.strip():
+            categories_list = [cat.strip() for cat in categories_text.split('\n') if cat.strip()]
+        else:
+            categories_list = []
+        
+        st.write("")  # Add spacing
+        st.caption(f"📋 {len(categories_list)} categories entered" if categories_list else "No categories entered yet")
     
     st.markdown("---")
     st.subheader("📋 Sample Format")
@@ -56,151 +82,160 @@ traditional dirndl
 men's shirt
 leather belt""")
     
-    st.markdown("**Categories CSV:**")
-    st.code("""Category
-Men Lederhosen & Outfits
+    st.markdown("**Categories:**")
+    st.code("""Men Lederhosen & Outfits
 Women Dirndl & Dresses
 Men Shirts
 Accessories""")
 
 # Main content
-if keywords_file and categories_file:
-    try:
-        # Load data
-        keywords_df = pd.read_csv(keywords_file)
-        categories_df = pd.read_csv(categories_file)
-        
-        # Validate columns
-        if 'Keyword' not in keywords_df.columns:
-            st.error("❌ Keywords CSV must have a 'Keyword' column")
-            st.stop()
-        
-        if 'Category' not in categories_df.columns:
-            st.error("❌ Categories CSV must have a 'Category' column")
-            st.stop()
-        
-        keywords_list = keywords_df['Keyword'].dropna().tolist()
-        categories_list = categories_df['Category'].dropna().tolist()
-        
-        if not keywords_list:
-            st.error("❌ No keywords found in file")
-            st.stop()
-        
-        if not categories_list:
-            st.error("❌ No categories found in file")
-            st.stop()
-        
-        # Cluster keywords
-        clusters, uncategorized = cluster_keywords_simple(keywords_list, categories_list)
-        
-        st.success(f"✅ Processed {len(keywords_list)} keywords successfully!")
-        
-        # Create tabs
-        tab1, tab2, tab3 = st.tabs(["Basket Summary", "Detailed View", "Download Results"])
-        
-        # Tab 1: Basket Summary
-        with tab1:
-            st.subheader("📊 Basket Summary")
+# Determine which input method was used for categories
+if categories_mode == "📤 Upload CSV":
+    has_categories = categories_file is not None
+else:
+    has_categories = len(categories_list) > 0 if categories_list else False
+
+if keywords_file and has_categories:
+    # Add a button to trigger clustering
+    if st.button("🚀 Cluster Keywords", type="primary", use_container_width=True):
+        try:
+            # Load keywords
+            keywords_df = pd.read_csv(keywords_file)
             
-            # Overview metrics
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Keywords", len(keywords_list))
-            with col2:
-                st.metric("Categories", len(categories_list))
-            with col3:
-                assigned = len(keywords_list) - len(uncategorized)
-                st.metric("Assigned", assigned)
-            with col4:
-                st.metric("Unassigned", len(uncategorized))
+            # Validate keyword column
+            if 'Keyword' not in keywords_df.columns:
+                st.error("❌ Keywords CSV must have a 'Keyword' column")
+                st.stop()
             
-            st.markdown("---")
+            keywords_list = keywords_df['Keyword'].dropna().tolist()
             
-            # Basket summary table
-            summary_data = []
-            for category in categories_list:
-                count = len(clusters.get(category, []))
-                summary_data.append({"Basket Name": category, "Keywords Count": count})
+            # Get categories based on input method
+            if categories_mode == "📤 Upload CSV":
+                categories_df = pd.read_csv(categories_file)
+                if 'Category' not in categories_df.columns:
+                    st.error("❌ Categories CSV must have a 'Category' column")
+                    st.stop()
+                categories_list = categories_df['Category'].dropna().tolist()
             
-            if uncategorized:
-                summary_data.append({"Basket Name": "Other", "Keywords Count": len(uncategorized)})
+            if not keywords_list:
+                st.error("❌ No keywords found in file")
+                st.stop()
             
-            summary_df = pd.DataFrame(summary_data)
-            st.dataframe(summary_df, use_container_width=True, hide_index=True)
-        
-        # Tab 2: Detailed View
-        with tab2:
-            st.subheader("📝 Detailed View")
+            if not categories_list:
+                st.error("❌ No categories provided")
+                st.stop()
             
-            for category in categories_list:
-                if category in clusters and clusters[category]:
-                    with st.expander(f"**{category}** ({len(clusters[category])} keywords)"):
-                        for kw in clusters[category]:
+            # Cluster keywords
+            clusters, uncategorized = cluster_keywords_simple(keywords_list, categories_list)
+            
+            st.success(f"✅ Processed {len(keywords_list)} keywords successfully!")
+            
+            # Create tabs
+            tab1, tab2, tab3 = st.tabs(["Basket Summary", "Detailed View", "Download Results"])
+            
+            # Tab 1: Basket Summary
+            with tab1:
+                st.subheader("📊 Basket Summary")
+                
+                # Overview metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Keywords", len(keywords_list))
+                with col2:
+                    st.metric("Categories", len(categories_list))
+                with col3:
+                    assigned = len(keywords_list) - len(uncategorized)
+                    st.metric("Assigned", assigned)
+                with col4:
+                    st.metric("Unassigned", len(uncategorized))
+                
+                st.markdown("---")
+                
+                # Basket summary table
+                summary_data = []
+                for category in categories_list:
+                    count = len(clusters.get(category, []))
+                    summary_data.append({"Basket Name": category, "Keywords Count": count})
+                
+                if uncategorized:
+                    summary_data.append({"Basket Name": "Other", "Keywords Count": len(uncategorized)})
+                
+                summary_df = pd.DataFrame(summary_data)
+                st.dataframe(summary_df, use_container_width=True, hide_index=True)
+            
+            # Tab 2: Detailed View
+            with tab2:
+                st.subheader("📝 Detailed View")
+                
+                for category in categories_list:
+                    if category in clusters and clusters[category]:
+                        with st.expander(f"**{category}** ({len(clusters[category])} keywords)"):
+                            for kw in clusters[category]:
+                                st.write(f"• {kw}")
+                
+                if uncategorized:
+                    with st.expander(f"**Other** ({len(uncategorized)} keywords)"):
+                        for kw in uncategorized:
                             st.write(f"• {kw}")
             
-            if uncategorized:
-                with st.expander(f"**Other** ({len(uncategorized)} keywords)"):
-                    for kw in uncategorized:
-                        st.write(f"• {kw}")
-        
-        # Tab 3: Download Results
-        with tab3:
-            st.subheader("📥 Download Results")
-            
-            # Prepare data for download
-            export_data = []
-            for category in categories_list:
-                for keyword in clusters.get(category, []):
-                    export_data.append({"Keyword": keyword, "Basket": category})
-            
-            for keyword in uncategorized:
-                export_data.append({"Keyword": keyword, "Basket": "Other"})
-            
-            export_df = pd.DataFrame(export_data)
-            
-            # CSV export
-            csv_data = export_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download as CSV",
-                data=csv_data,
-                file_name="clustered_keywords.csv",
-                mime="text/csv"
-            )
-            
-            # TXT export
-            txt_data = ""
-            for category in categories_list:
-                if clusters.get(category):
-                    txt_data += f"{category}\n"
+            # Tab 3: Download Results
+            with tab3:
+                st.subheader("📥 Download Results")
+                
+                # Prepare data for download
+                export_data = []
+                for category in categories_list:
+                    for keyword in clusters.get(category, []):
+                        export_data.append({"Keyword": keyword, "Basket": category})
+                
+                for keyword in uncategorized:
+                    export_data.append({"Keyword": keyword, "Basket": "Other"})
+                
+                export_df = pd.DataFrame(export_data)
+                
+                # CSV export
+                csv_data = export_df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download as CSV",
+                    data=csv_data,
+                    file_name="clustered_keywords.csv",
+                    mime="text/csv"
+                )
+                
+                # TXT export
+                txt_data = ""
+                for category in categories_list:
+                    if clusters.get(category):
+                        txt_data += f"{category}\n"
+                        txt_data += "=" * 50 + "\n"
+                        for kw in clusters[category]:
+                            txt_data += f"• {kw}\n"
+                        txt_data += "\n"
+                
+                if uncategorized:
+                    txt_data += "Other\n"
                     txt_data += "=" * 50 + "\n"
-                    for kw in clusters[category]:
+                    for kw in uncategorized:
                         txt_data += f"• {kw}\n"
-                    txt_data += "\n"
-            
-            if uncategorized:
-                txt_data += "Other\n"
-                txt_data += "=" * 50 + "\n"
-                for kw in uncategorized:
-                    txt_data += f"• {kw}\n"
-            
-            st.download_button(
-                label="📥 Download as TXT",
-                data=txt_data,
-                file_name="clustered_keywords.txt",
-                mime="text/plain"
-            )
-            
-            # JSON export
-            json_data = json.dumps(dict(clusters), indent=2)
-            st.download_button(
-                label="📥 Download as JSON",
-                data=json_data,
-                file_name="clustered_keywords.json",
-                mime="application/json"
-            )
+                
+                st.download_button(
+                    label="📥 Download as TXT",
+                    data=txt_data,
+                    file_name="clustered_keywords.txt",
+                    mime="text/plain"
+                )
+                
+                # JSON export
+                json_data = json.dumps(dict(clusters), indent=2)
+                st.download_button(
+                    label="📥 Download as JSON",
+                    data=json_data,
+                    file_name="clustered_keywords.json",
+                    mime="application/json"
+                )
 
-    except Exception as e:
-        st.error(f"❌ Error processing files: {str(e)}")
+        except Exception as e:
+            st.error(f"❌ Error processing files: {str(e)}")
 
 else:
-    st.info("👈 Upload your CSV files in the sidebar to start clustering keywords")
+    st.info("👈 Upload keywords CSV and enter/upload categories in the sidebar to start clustering")
